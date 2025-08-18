@@ -39,6 +39,14 @@ func initFlag() {
 	flag.Parse()
 }
 
+func ControlCacheMiddle() gin.HandlerFunc {
+	h := func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=3600")
+		c.Next()
+	}
+	return h
+}
+
 func main() {
 	initFlag()
 
@@ -51,8 +59,23 @@ func main() {
 
 	r := gin.Default()
 
+	r.Use(ControlCacheMiddle())
+
 	r.GET("/", func(c *gin.Context) {
+		c.Header("cach", "")
 		c.String(200, "Hello, World!\n")
+	})
+
+	r.GET("/t", func(c *gin.Context) {
+		c.File("./static/t.html")
+	})
+
+	r.GET("/echarts.min.js", func(c *gin.Context) {
+		c.File("./static/echarts.min.js")
+	})
+
+	r.GET("/tailwind.js", func(c *gin.Context) {
+		c.File("./static/index.global.min.js")
 	})
 
 	r.GET("/info", func(c *gin.Context) {
@@ -161,6 +184,10 @@ func main() {
 			data = append(data, d)
 		}
 		c.JSON(200, data)
+	})
+
+	r.NoRoute(func(c *gin.Context) {
+		c.String(200, "No Data")
 	})
 
 	err = r.Run(":" + *port)

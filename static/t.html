@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Network Traffic Statistics</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src="/echarts.min.js"></script>
+    <script src="/tailwind.js"></script>
+    <style>
+        html {
+            background: #000;
+        }
+
+        .list > div {
+            padding: 2em;
+            border-radius: 12px;
+            background-color: #333;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body class="p-0 m-0 overflow-hidden text-white">
+    <div id="home" class="h-screen w-screen flex flex-col justify-around items-center">
+        <div>
+            <h1 style="font-size: 36px;font-family: Arial, Helvetica, sans-serif;">network traffic statistics</h1>
+        </div>
+        <div class="list flex w-full justify-around">
+            <div><button onclick="viewData(`year`)">year</button></div>
+            <div><button onclick="viewData(`month`)">month</button></div>
+            <div><button onclick="viewData(`day`)">day</button></div>
+            <div><button onclick="viewData(`hour`)">hour</button></div>
+        </div>
+    </div>
+    <div id="data" class="h-screen w-screen flex flex-col hidden">
+        <div class="title flex justify-between items-center p-4 bg-gray-800">
+            <div onclick="returnHome()">return</div>
+            <h2 id="data-title"></h2>
+            <div class="changeDisplayButton flex items-center gap-4">
+                <div>total data</div>
+                <div>category type</div>
+                <div>switch linear/logarithmic</div>
+            </div>
+        </div>
+        <div class="echarts flex-1"></div>
+    </div>
+</body>
+<script>
+    /** @type {HTMLElement} */
+    let h =  document.querySelector("#home")
+    /** @type {HTMLElement} */
+    let d =  document.querySelector("#data")
+    /** @type {HTMLElement} */
+    let d_t =  d.querySelector("#data-title")
+    async function viewData(period) {
+        const preidMap = {
+            "year": "y",
+            "month": "m",
+            "day": "d",
+            "hour": "h"
+        }
+
+        d_t.innerText = `network traffic statistics - ${period}`
+
+        let dateFmt = () => {};
+        switch (period) {
+            case "year":
+                dateFmt = (date) => new Date(date).getFullYear();
+                break;
+            case "month":
+                dateFmt = (date) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'numeric'});
+                break;
+            case "day":
+                dateFmt = (date) => new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+                break;
+            case "hour":
+                dateFmt = (date) => new Date(date).toLocaleTimeString('en-US', { day: "numeric", hour: '2-digit'});
+                break;
+        }
+
+        h.classList.add("hidden")
+        d.classList.remove("hidden")
+
+        let data = await (await fetch(`/${preidMap[period]}/1`)).json()
+        // let data = [{"date":"2025-01-01T00:00:00Z","rx":15965029623827,"tx":14157776994948},{"date":"2024-01-01T00:00:00Z","rx":3108986879164,"tx":7449288058027}]
+
+        option = {
+            xAxis: {
+                type: 'category',
+                data: data.map(d => dateFmt(d.date)),
+            },
+            yAxis: {
+                type: 'value',
+            },
+            series: [
+                {
+                    data: data.map(d => d.rx),
+                    type: 'line'
+                },{
+                    data: data.map(d => d.tx),
+                    type: 'line'
+                }
+            ]
+        };
+
+        var Chart = echarts.init(d.children[1], 'dark');
+        Chart.setOption(option);
+    }
+
+    async function returnHome() {
+        h.classList.remove("hidden")
+        d.classList.add("hidden")
+    }
+</script>
+</html>
